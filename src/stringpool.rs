@@ -3,7 +3,7 @@ use std::io::SeekFrom;
 use std::io::{Read, Seek};
 use std::rc::Rc;
 
-use crate::{read_u16, read_u32, ChunkHeader, ParseError};
+use crate::{read_u16, read_u32, read_u8, ChunkHeader, ParseError};
 
 #[derive(Debug)]
 pub(crate) struct StringPoolHeader {
@@ -56,7 +56,7 @@ impl StringPool {
         let string_pool_header = StringPoolHeader::read_from_file(input, chunk_header)?;
         assert_eq!(string_pool_header.style_count, 0);
 
-        let flag_is_utf8 = string_pool_header.flags & (1 << 8);
+        let flag_is_utf8 = (string_pool_header.flags & (1 << 8)) != 0;
 
         // Save current position in the file stream
         let chunk_data_start = input.stream_position().unwrap();
@@ -80,8 +80,8 @@ impl StringPool {
         for offset in offsets {
             input.seek(SeekFrom::Current((offset) as i64)).unwrap();
 
-            if flag_is_utf8 == 1 {
-                unimplemented!("utf8");
+            if flag_is_utf8 {
+                strings.push(Rc::new(parse_utf8_string(input)?));
             } else {
                 strings.push(Rc::new(parse_utf16_string(input)?));
             }
@@ -129,4 +129,33 @@ fn parse_utf16_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseErro
 
 fn is_high_bit_set_16(input: u16) -> bool {
     input & (1 << 15) != 0
+}
+
+fn parse_utf8_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError> {
+    let _ = read_u8(input)?;
+    let len = read_u8(input)?;
+
+    // Handles the case where the length value has high bit set
+    // Not quite clear if the UTF-8 encoding actually has this but
+    // perform the check anyway...
+    if is_high_bit_set_8(len) {
+        unimplemented!()
+    }
+
+    let mut s = Vec::with_capacity(len as usize);
+    for _ in 0..len {
+        s.push(read_u8(input)?);
+    }
+
+    // Encoded string length does not include the trailing 0
+    let _ = read_u8(input)?;
+
+    let ss = String::from_utf8(s).unwrap();
+    println!("{}", ss);
+    Ok(ss)
+    // Ok(String::from_utf8(s).unwrap())
+}
+
+fn is_high_bit_set_8(input: u8) -> bool {
+    input & (1 << 7) != 0
 }

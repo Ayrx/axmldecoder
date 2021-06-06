@@ -13,7 +13,6 @@
 //!file into your compiled binary.
 //!
 //!The following features will be implemented in the future:
-//!* Support for binary XML documents using UTF-8 encoding for the string pool
 //!* Support for binary XML documents with UTF-16 strings longer than 32767
 //!characters
 //!
@@ -239,7 +238,11 @@ mod tests {
         example.push(".tmp");
 
         example.set_file_name("AndroidManifest.xml");
-        let mut f = File::open(example).unwrap();
+        let mut f = File::open(&example).unwrap();
+        parse(&mut f).unwrap();
+
+        example.set_file_name("AndroidManifestUTF8Strings.xml");
+        let mut f = File::open(&example).unwrap();
         parse(&mut f).unwrap();
     }
 }
