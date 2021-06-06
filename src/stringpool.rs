@@ -150,10 +150,7 @@ fn parse_utf8_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError
     // Encoded string length does not include the trailing 0
     let _ = read_u8(input)?;
 
-    let ss = String::from_utf8(s).unwrap();
-    println!("{}", ss);
-    Ok(ss)
-    // Ok(String::from_utf8(s).unwrap())
+    Ok(String::from_utf8(s).unwrap())
 }
 
 fn is_high_bit_set_8(input: u8) -> bool {
