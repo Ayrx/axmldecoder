@@ -125,8 +125,8 @@ impl ChunkHeader {
 ///```rust
 ///use axmldecoder::parse;
 ///# use axmldecoder::ParseError;
-///
-///let mut f = std::fs::File::open("AndroidManifest.xml").unwrap();
+///# let manifest_file = "examples/AndroidManifest.xml";
+///let mut f = std::fs::File::open(manifest_file).unwrap();
 ///parse(&mut f)?;
 ///# Ok::<(), ParseError>(())
 ///```
@@ -229,10 +229,17 @@ fn read_u32<F: Read + Seek>(input: &mut F) -> Result<u32, ParseError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
+    use std::path::PathBuf;
 
     #[test]
     fn test_parse() {
-        let mut f = std::fs::File::open("AndroidManifest.xml").unwrap();
+        let mut example = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        example.push("examples");
+        example.push(".tmp");
+
+        example.set_file_name("AndroidManifest.xml");
+        let mut f = File::open(example).unwrap();
         parse(&mut f).unwrap();
     }
 }
