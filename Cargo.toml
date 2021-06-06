@@ -1,0 +1,14 @@
+[package]
+name = "axmldecoder"
+description = "Decode Android's binary XML format"
+license = "MIT OR Apache-2.0"
+version = "0.1.0"
+authors = ["Terry Chia <terrycwk1994@gmail.com>"]
+edition = "2018"
+repository = "https://github.com/Ayrx/axmldecoder"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byteorder = "1.4.3"
+thiserror = "1.0.24"
