@@ -6,6 +6,7 @@ use crate::binaryxml::{XmlElement, XmlStartElement, XmlStartNameSpace};
 use crate::stringpool::StringPool;
 
 ///Struct representing a parsed XML document.
+#[derive(Debug)]
 pub struct XmlDocument {
     root: Option<Element>,
 }
@@ -106,6 +107,7 @@ impl XmlDocument {
 }
 
 ///Struct representing an element within the parsed XML document.
+#[derive(Debug)]
 pub struct Element {
     attributes: HashMap<String, String>,
     tag: String,
