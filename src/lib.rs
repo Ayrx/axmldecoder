@@ -233,16 +233,13 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut example = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        example.push("examples");
-        example.push(".tmp");
+        let mut examples = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        examples.push("examples");
 
-        example.set_file_name("AndroidManifest.xml");
-        let mut f = File::open(&example).unwrap();
-        parse(&mut f).unwrap();
-
-        example.set_file_name("AndroidManifestUTF8Strings.xml");
-        let mut f = File::open(&example).unwrap();
-        parse(&mut f).unwrap();
+        for entry in std::fs::read_dir(examples).unwrap() {
+            let entry = entry.unwrap();
+            let mut f = File::open(entry.path()).unwrap();
+            parse(&mut f).expect(&format!("{} failed to parse", entry.path().display()));
+        }
     }
 }
