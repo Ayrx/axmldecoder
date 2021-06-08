@@ -194,9 +194,9 @@ fn parse_resource_map<F: Read + Seek>(
     input: &mut F,
     header: &ChunkHeader,
 ) -> Result<Vec<u32>, ParseError> {
-    let id_count = (header.size - header.header_size as u32) / 4;
+    let id_count = (header.size - u32::from(header.header_size)) / 4;
 
-    let mut ids = Vec::with_capacity(id_count as usize);
+    let mut ids = Vec::with_capacity(usize::try_from(id_count).unwrap());
     for _ in 0..id_count {
         ids.push(read_u32(input)?);
     }

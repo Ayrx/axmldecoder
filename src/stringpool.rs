@@ -62,23 +62,25 @@ impl StringPool {
         let chunk_data_start = input.stream_position().unwrap();
 
         // Parse string offsets
-        let mut offsets = Vec::with_capacity(string_pool_header.string_count as usize);
+        let mut offsets =
+            Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
         for _ in 0..string_pool_header.string_count {
             offsets.push(read_u32(input)?);
         }
 
         const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
 
-        let s = string_pool_header.string_start - STRINGPOOL_HEADER_SIZE as u32;
+        let s = string_pool_header.string_start - u32::try_from(STRINGPOOL_HEADER_SIZE).unwrap();
         input.seek(SeekFrom::Start(chunk_data_start)).unwrap();
-        input.seek(SeekFrom::Current(s as i64)).unwrap();
+        input.seek(SeekFrom::Current(s.into())).unwrap();
 
         // Save current position in the file stream
         let string_data_start = input.stream_position().unwrap();
 
-        let mut strings = Vec::with_capacity(string_pool_header.string_count as usize);
+        let mut strings =
+            Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
         for offset in offsets {
-            input.seek(SeekFrom::Current((offset) as i64)).unwrap();
+            input.seek(SeekFrom::Current(offset.into())).unwrap();
 
             if flag_is_utf8 {
                 strings.push(Rc::new(parse_utf8_string(input)?));
@@ -89,9 +91,10 @@ impl StringPool {
             input.seek(SeekFrom::Start(string_data_start)).unwrap();
         }
 
-        let s = string_pool_header.chunk_header.size - STRINGPOOL_HEADER_SIZE as u32;
+        let s =
+            string_pool_header.chunk_header.size - u32::try_from(STRINGPOOL_HEADER_SIZE).unwrap();
         input.seek(SeekFrom::Start(chunk_data_start)).unwrap();
-        input.seek(SeekFrom::Current(s as i64)).unwrap();
+        input.seek(SeekFrom::Current(s.into())).unwrap();
 
         Ok(Self {
             header: string_pool_header,
@@ -116,7 +119,7 @@ fn parse_utf16_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseErro
         unimplemented!()
     }
 
-    let mut s = Vec::with_capacity(len as usize);
+    let mut s = Vec::with_capacity(len.into());
     for _ in 0..len {
         s.push(read_u16(input)?);
     }
@@ -142,7 +145,7 @@ fn parse_utf8_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError
         unimplemented!()
     }
 
-    let mut s = Vec::with_capacity(len as usize);
+    let mut s = Vec::with_capacity(len.into());
     for _ in 0..len {
         s.push(read_u8(input)?);
     }

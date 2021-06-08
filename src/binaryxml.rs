@@ -171,7 +171,7 @@ impl XmlStartElement {
         let header = XmlNodeHeader::read_from_file(input, &chunk_header)?;
         let attr_ext = XmlAttrExt::read_from_file(input)?;
 
-        let mut attributes = Vec::with_capacity(attr_ext.attribute_count as usize);
+        let mut attributes = Vec::with_capacity(attr_ext.attribute_count.into());
         for _ in 0..attr_ext.attribute_count {
             attributes.push(XmlAttribute::read_from_file(input)?);
         }
