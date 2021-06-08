@@ -26,6 +26,7 @@ mod xml;
 
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
+use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use thiserror::Error;
@@ -47,7 +48,7 @@ pub enum ParseError {
 }
 
 #[repr(u16)]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, TryFromPrimitive)]
 enum ResourceType {
     // Might be an error in the code?
     // NullType = 0x001,
@@ -69,30 +70,6 @@ enum ResourceType {
     TableType = 0x0201,
     TableTypeSpec = 0x0202,
     TableLibrary = 0x0203,
-}
-
-impl TryFrom<u16> for ResourceType {
-    type Error = ();
-
-    fn try_from(v: u16) -> Result<Self, Self::Error> {
-        match v {
-            x if x == Self::StringPool as u16 => Ok(Self::StringPool),
-            x if x == Self::Table as u16 => Ok(Self::Table),
-            x if x == Self::Xml as u16 => Ok(Self::Xml),
-            x if x == Self::XmlStartNameSpace as u16 => Ok(Self::XmlStartNameSpace),
-            x if x == Self::XmlEndNameSpace as u16 => Ok(Self::XmlEndNameSpace),
-            x if x == Self::XmlStartElement as u16 => Ok(Self::XmlStartElement),
-            x if x == Self::XmlEndElement as u16 => Ok(Self::XmlEndElement),
-            x if x == Self::XmlCdata as u16 => Ok(Self::XmlCdata),
-            x if x == Self::XmlLastChunk as u16 => Ok(Self::XmlLastChunk),
-            x if x == Self::XmlResourceMap as u16 => Ok(Self::XmlResourceMap),
-            x if x == Self::TablePackage as u16 => Ok(Self::TablePackage),
-            x if x == Self::TableType as u16 => Ok(Self::TableType),
-            x if x == Self::TableTypeSpec as u16 => Ok(Self::TableTypeSpec),
-            x if x == Self::TableLibrary as u16 => Ok(Self::TableLibrary),
-            _ => Err(()),
-        }
-    }
 }
 
 #[repr(C)]

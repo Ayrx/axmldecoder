@@ -1,3 +1,4 @@
+use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use std::rc::Rc;
@@ -45,7 +46,7 @@ impl ResourceValue {
 }
 
 #[repr(u8)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, TryFromPrimitive)]
 pub(crate) enum ResourceValueType {
     Null = 0x00,
     Reference = 0x01,
@@ -61,28 +62,4 @@ pub(crate) enum ResourceValueType {
     ColorRgb8 = 0x1d,
     ColorArgb4 = 0x1e,
     ColorRgb4 = 0x1f,
-}
-
-impl TryFrom<u8> for ResourceValueType {
-    type Error = ();
-
-    fn try_from(v: u8) -> Result<Self, Self::Error> {
-        match v {
-            x if x == Self::Null as u8 => Ok(Self::Null),
-            x if x == Self::Reference as u8 => Ok(Self::Reference),
-            x if x == Self::Attribute as u8 => Ok(Self::Attribute),
-            x if x == Self::String as u8 => Ok(Self::String),
-            x if x == Self::Float as u8 => Ok(Self::Float),
-            x if x == Self::Dimension as u8 => Ok(Self::Dimension),
-            x if x == Self::Fraction as u8 => Ok(Self::Fraction),
-            x if x == Self::Dec as u8 => Ok(Self::Dec),
-            x if x == Self::Hex as u8 => Ok(Self::Hex),
-            x if x == Self::Boolean as u8 => Ok(Self::Boolean),
-            x if x == Self::ColorArgb8 as u8 => Ok(Self::ColorArgb8),
-            x if x == Self::ColorRgb8 as u8 => Ok(Self::ColorRgb8),
-            x if x == Self::ColorArgb4 as u8 => Ok(Self::ColorArgb4),
-            x if x == Self::ColorRgb4 as u8 => Ok(Self::ColorRgb4),
-            _ => Err(()),
-        }
-    }
 }

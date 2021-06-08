@@ -11,4 +11,5 @@ repository = "https://github.com/Ayrx/axmldecoder"
 
 [dependencies]
 byteorder = "1.4.3"
+num_enum = "0.5.1"
 thiserror = "1.0.24"
