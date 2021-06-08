@@ -50,14 +50,10 @@ pub enum ParseError {
 #[repr(u16)]
 #[derive(Debug, PartialEq, Clone, TryFromPrimitive)]
 enum ResourceType {
-    // Might be an error in the code?
-    // NullType = 0x001,
+    NullType = 0x000,
     StringPool = 0x0001,
     Table = 0x0002,
     Xml = 0x0003,
-
-    // Might be an error in the code?
-    // XmlFirstChunk = 0x0100,
     XmlStartNameSpace = 0x0100,
     XmlEndNameSpace = 0x101,
     XmlStartElement = 0x0102,
@@ -65,7 +61,6 @@ enum ResourceType {
     XmlCdata = 0x0104,
     XmlLastChunk = 0x017f,
     XmlResourceMap = 0x0180,
-
     TablePackage = 0x0200,
     TableType = 0x0201,
     TableTypeSpec = 0x0202,
