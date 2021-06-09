@@ -36,7 +36,7 @@ use crate::binaryxml::{
 };
 use crate::stringpool::StringPool;
 
-pub use crate::xml::{Element, XmlDocument};
+pub use crate::xml::{Cdata, Element, Node, XmlDocument};
 
 #[derive(Error, Debug)]
 pub enum ParseError {

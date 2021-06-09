@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use axmldecoder::Element;
+use axmldecoder::{Cdata, Element, Node};
 use std::fs::File;
 
 fn main() -> Result<()> {
@@ -11,7 +11,6 @@ fn main() -> Result<()> {
     let xml = axmldecoder::parse(&mut f)?;
 
     let root = xml.get_root().as_ref().unwrap();
-
     let mut s = String::new();
     s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     format_xml(&root, 0_usize, &mut s);
@@ -22,26 +21,47 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn format_xml(e: &Element, level: usize, output: &mut String) {
-    output.push_str(&format!(
-        "{:indent$}{}\n",
-        "",
-        &format_start_element(&e),
-        indent = level * 2
-    ));
+fn format_xml(e: &Node, level: usize, output: &mut String) {
+    match e {
+        Node::Element(e) => {
+            output.push_str(&format!(
+                "{:indent$}{}\n",
+                "",
+                &format_start_element(&e),
+                indent = level * 2
+            ));
 
-    for child in e.get_children() {
-        format_xml(&child, level + 1, output)
-    }
+            for child in e.get_children() {
+                format_xml(&child, level + 1, output)
+            }
 
-    if !e.get_children().is_empty() {
-        output.push_str(&format!(
-            "{:indent$}{}\n",
-            "",
-            &format_end_element(&e),
-            indent = level * 2
-        ));
+            if !e.get_children().is_empty() {
+                output.push_str(&format!(
+                    "{:indent$}{}\n",
+                    "",
+                    &format_end_element(&e),
+                    indent = level * 2
+                ));
+            }
+        }
+        Node::Cdata(e) => {
+            output.push_str(&format!(
+                "{:indent$}{}\n",
+                "",
+                &format_cdata(&e, level),
+                indent = level * 2
+            ));
+        }
     }
+}
+
+fn format_cdata(e: &Cdata, level: usize) -> String {
+    let indent = format!("{:indent$}", "", indent = level * 2);
+    let mut s = String::new();
+    s.push_str("<![CDATA[");
+    s.push_str(&e.get_data().replace("\n", &format!("\n{}", &indent)));
+    s.push_str("]]>");
+    s
 }
 
 fn format_start_element(e: &Element) -> String {

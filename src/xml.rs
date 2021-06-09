@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
-use crate::binaryxml::{XmlElement, XmlStartElement, XmlStartNameSpace};
+use crate::binaryxml::{XmlCdata, XmlElement, XmlStartElement, XmlStartNameSpace};
 use crate::stringpool::StringPool;
 
 ///Struct representing a parsed XML document.
 #[derive(Debug)]
 pub struct XmlDocument {
-    root: Option<Element>,
+    root: Option<Node>,
 }
 
 impl XmlDocument {
@@ -38,12 +38,23 @@ impl XmlDocument {
                     let e = element_tracker.pop().unwrap();
 
                     if element_tracker.is_empty() {
-                        return XmlDocument { root: Some(e) };
+                        return XmlDocument {
+                            root: Some(Node::Element(e)),
+                        };
                     }
 
-                    element_tracker.last_mut().unwrap().insert_children(e);
+                    element_tracker
+                        .last_mut()
+                        .unwrap()
+                        .insert_children(Node::Element(e));
                 }
-                XmlElement::XmlCdata(_) => unimplemented!(),
+                XmlElement::XmlCdata(e) => {
+                    let cdata = Self::process_cdata(&e, &string_pool);
+                    element_tracker
+                        .last_mut()
+                        .unwrap()
+                        .insert_children(Node::Cdata(cdata))
+                }
             };
         }
 
@@ -51,8 +62,17 @@ impl XmlDocument {
     }
 
     ///Returns the root [Element] of the XML document.
-    pub fn get_root(&self) -> &Option<Element> {
+    pub fn get_root(&self) -> &Option<Node> {
         &self.root
+    }
+
+    fn process_cdata(e: &XmlCdata, string_pool: &StringPool) -> Cdata {
+        Cdata {
+            data: string_pool
+                .get(usize::try_from(e.data).unwrap())
+                .unwrap()
+                .to_string(),
+        }
     }
 
     fn process_start_namespace(
@@ -106,12 +126,18 @@ impl XmlDocument {
     }
 }
 
+#[derive(Debug)]
+pub enum Node {
+    Element(Element),
+    Cdata(Cdata),
+}
+
 ///Struct representing an element within the parsed XML document.
 #[derive(Debug)]
 pub struct Element {
     attributes: HashMap<String, String>,
     tag: String,
-    children: Vec<Self>,
+    children: Vec<Node>,
 }
 
 impl Element {
@@ -125,12 +151,23 @@ impl Element {
         &self.tag
     }
 
-    ///Returns a list of child elements.
-    pub fn get_children(&self) -> &Vec<Self> {
+    ///Returns a list of child nodes.
+    pub fn get_children(&self) -> &Vec<Node> {
         &self.children
     }
 
-    fn insert_children(&mut self, child: Element) {
+    fn insert_children(&mut self, child: Node) {
         self.children.push(child);
+    }
+}
+
+#[derive(Debug)]
+pub struct Cdata {
+    data: String,
+}
+
+impl Cdata {
+    pub fn get_data(&self) -> &str {
+        &self.data
     }
 }
