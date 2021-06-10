@@ -134,6 +134,7 @@ impl XmlDocument {
     }
 }
 
+///Enum representing possible nodes within the parsed XML document.
 #[derive(Debug)]
 pub enum Node {
     Element(Element),
@@ -169,6 +170,7 @@ impl Element {
     }
 }
 
+///Struct representing a Cdata element within the parsed XML document.
 #[derive(Debug)]
 pub struct Cdata {
     data: String,

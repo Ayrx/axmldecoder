@@ -16,10 +16,5 @@ For a full-featured Rust binary XML parser,
 is highly recommended if it is acceptable to link a 30MB `resources.arsc`
 file into your compiled binary.
 
-The following features will be implemented in the future:
-* Support for binary XML documents using UTF-8 encoding for the string pool
-* Support for binary XML documents with UTF-16 strings longer than 32767
-characters
-
 Please file an issue with the relevant binary `AndroidManifest.xml` if
 if any issues are encountered.
