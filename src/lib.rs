@@ -39,7 +39,7 @@ pub enum ParseError {
     #[error("invalid file")]
     InvalidFile,
 
-    #[error("i/o error")]
+    #[error(transparent)]
     IoError(std::io::Error),
 }
 
