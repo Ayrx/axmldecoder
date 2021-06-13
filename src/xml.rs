@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::binaryxml::{XmlCdata, XmlElement, XmlStartElement, XmlStartNameSpace};
 use crate::stringpool::StringPool;
+use crate::ParseError;
 
 ///Struct representing a parsed XML document.
 #[derive(Debug)]
@@ -16,14 +17,14 @@ impl XmlDocument {
         elements: Vec<XmlElement>,
         string_pool: StringPool,
         resource_map: Vec<u32>,
-    ) -> Self {
+    ) -> Result<Self, ParseError> {
         let mut namespaces = HashMap::new();
 
         let mut element_tracker: Vec<Element> = Vec::new();
         for element in elements {
             match element {
                 XmlElement::XmlStartNameSpace(e) => {
-                    let (uri, prefix) = Self::process_start_namespace(&e, &string_pool);
+                    let (uri, prefix) = Self::process_start_namespace(&e, &string_pool)?;
                     namespaces.insert(uri.clone(), prefix.clone());
                 }
                 XmlElement::XmlEndNameSpace(_) => {}
@@ -33,15 +34,15 @@ impl XmlDocument {
                         &string_pool,
                         &namespaces,
                         &resource_map,
-                    ));
+                    )?);
                 }
                 XmlElement::XmlEndElement(_) => {
                     let e = element_tracker.pop().unwrap();
 
                     if element_tracker.is_empty() {
-                        return XmlDocument {
+                        return Ok(XmlDocument {
                             root: Some(Node::Element(e)),
-                        };
+                        });
                     }
 
                     element_tracker
@@ -50,7 +51,7 @@ impl XmlDocument {
                         .insert_children(Node::Element(e));
                 }
                 XmlElement::XmlCdata(e) => {
-                    let cdata = Self::process_cdata(&e, &string_pool);
+                    let cdata = Self::process_cdata(&e, &string_pool)?;
                     element_tracker
                         .last_mut()
                         .unwrap()
@@ -59,7 +60,7 @@ impl XmlDocument {
             };
         }
 
-        Self { root: None }
+        Ok(Self { root: None })
     }
 
     ///Returns the root [Element] of the XML document.
@@ -67,23 +68,27 @@ impl XmlDocument {
         &self.root
     }
 
-    fn process_cdata(e: &XmlCdata, string_pool: &StringPool) -> Cdata {
-        Cdata {
+    fn process_cdata(e: &XmlCdata, string_pool: &StringPool) -> Result<Cdata, ParseError> {
+        Ok(Cdata {
             data: string_pool
                 .get(usize::try_from(e.data).unwrap())
-                .unwrap()
+                .ok_or(ParseError::StringNotFound(e.data))?
                 .to_string(),
-        }
+        })
     }
 
     fn process_start_namespace(
         e: &XmlStartNameSpace,
         string_pool: &StringPool,
-    ) -> (Rc<String>, Rc<String>) {
-        let uri = string_pool.get(usize::try_from(e.uri).unwrap()).unwrap();
-        let prefix = string_pool.get(usize::try_from(e.prefix).unwrap()).unwrap();
+    ) -> Result<(Rc<String>, Rc<String>), ParseError> {
+        let uri = string_pool
+            .get(usize::try_from(e.uri).unwrap())
+            .ok_or(ParseError::StringNotFound(e.uri))?;
+        let prefix = string_pool
+            .get(usize::try_from(e.prefix).unwrap())
+            .ok_or(ParseError::StringNotFound(e.prefix))?;
 
-        (uri, prefix)
+        Ok((uri, prefix))
     }
 
     fn process_start_element(
@@ -91,13 +96,13 @@ impl XmlDocument {
         string_pool: &StringPool,
         namespaces: &HashMap<Rc<String>, Rc<String>>,
         resource_map: &[u32],
-    ) -> Element {
+    ) -> Result<Element, ParseError> {
         let ns = string_pool.get(usize::try_from(e.attr_ext.ns).unwrap());
         assert_eq!(ns, None);
 
         let name = string_pool
             .get(usize::try_from(e.attr_ext.name).unwrap())
-            .unwrap();
+            .ok_or(ParseError::StringNotFound(e.attr_ext.name))?;
         let name = (*name).clone();
 
         let mut attributes: HashMap<String, String> = HashMap::new();
@@ -105,13 +110,15 @@ impl XmlDocument {
             let ns = string_pool.get(usize::try_from(attr.ns).unwrap());
             let name = string_pool
                 .get(usize::try_from(attr.name).unwrap())
-                .unwrap();
+                .ok_or(ParseError::StringNotFound(attr.name))?;
             let value = attr.typed_value.get_value(&string_pool);
 
             let mut final_name = String::new();
             if !name.is_empty() {
                 if let Some(n) = ns {
-                    let ns_prefix = namespaces.get(&n).unwrap();
+                    let ns_prefix = namespaces
+                        .get(&n)
+                        .ok_or_else(|| ParseError::NamespaceNotFound(n.to_string()))?;
                     final_name.push_str(ns_prefix);
                     final_name.push(':');
                 }
@@ -119,18 +126,20 @@ impl XmlDocument {
             } else {
                 let resource_id = resource_map
                     .get(usize::try_from(attr.name).unwrap())
-                    .unwrap();
-                final_name.push_str(&get_resource_string(*resource_id));
+                    .ok_or(ParseError::ResourceIdNotFound(attr.name))?;
+                let resource_str = get_resource_string(*resource_id)
+                    .ok_or(ParseError::UnknownResourceString(*resource_id))?;
+                final_name.push_str(&resource_str);
             }
 
             attributes.insert(final_name, value.to_string());
         }
 
-        Element {
+        Ok(Element {
             attributes,
             tag: name,
             children: Vec::new(),
-        }
+        })
     }
 }
 
@@ -184,7 +193,7 @@ impl Cdata {
 
 // Logic borrowed from:
 // https://github.com/ytsutano/axmldec/blob/master/lib/jitana/util/axml_parser.cpp#L504
-fn get_resource_string(resource_id: u32) -> String {
+fn get_resource_string(resource_id: u32) -> Option<String> {
     const RESOURCE_STRINGS: &[&str] = &[
         "theme",
         "label",
@@ -1519,8 +1528,9 @@ fn get_resource_string(resource_id: u32) -> String {
 
     let i = resource_id - 0x1010000;
 
-    RESOURCE_STRINGS
-        .get(usize::try_from(i).unwrap())
-        .unwrap()
-        .to_string()
+    Some(
+        RESOURCE_STRINGS
+            .get(usize::try_from(i).unwrap())?
+            .to_string(),
+    )
 }

@@ -103,7 +103,7 @@ impl StringPool {
             return None;
         }
 
-        Some(self.strings.get(i).unwrap().clone())
+        Some(self.strings.get(i)?.clone())
     }
 }
 

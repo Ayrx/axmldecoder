@@ -39,6 +39,24 @@ pub enum ParseError {
     #[error("invalid file")]
     InvalidFile,
 
+    #[error("missing StringPool chunk")]
+    MissingStringPoolChunk,
+
+    #[error("missing ResourceMap chunk")]
+    MissingResourceMapChunk,
+
+    #[error("StringPool missing index: {0}")]
+    StringNotFound(u32),
+
+    #[error("Namespace missing: {0}")]
+    NamespaceNotFound(String),
+
+    #[error("ResourceMap missing index: {0}")]
+    ResourceIdNotFound(u32),
+
+    #[error("Unknown resource string: {0}")]
+    UnknownResourceString(u32),
+
     #[error(transparent)]
     Utf8StringParseError(std::string::FromUtf8Error),
 
@@ -157,11 +175,11 @@ pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
         }
     }
 
-    Ok(XmlDocument::new(
+    XmlDocument::new(
         elements,
-        string_pool.unwrap(),
-        resource_map.unwrap(),
-    ))
+        string_pool.ok_or(ParseError::MissingStringPoolChunk)?,
+        resource_map.ok_or(ParseError::MissingResourceMapChunk)?,
+    )
 }
 
 fn parse_resource_map<F: Read + Seek>(
