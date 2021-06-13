@@ -1,9 +1,10 @@
+use byteorder::ByteOrder;
+use byteorder::LittleEndian;
 use std::convert::TryFrom;
-use std::io::SeekFrom;
 use std::io::{Read, Seek};
 use std::rc::Rc;
 
-use crate::{read_u16, read_u32, read_u8, ChunkHeader, ParseError};
+use crate::{read_u32, ChunkHeader, ParseError};
 
 #[derive(Debug)]
 pub(crate) struct StringPoolHeader {
@@ -58,43 +59,39 @@ impl StringPool {
 
         let flag_is_utf8 = (string_pool_header.flags & (1 << 8)) != 0;
 
-        // Save current position in the file stream
-        let chunk_data_start = input.stream_position().unwrap();
+        const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
+        let s =
+            usize::try_from(string_pool_header.chunk_header.size).unwrap() - STRINGPOOL_HEADER_SIZE;
+        let mut string_pool_data = vec![0; s];
+
+        input
+            .read_exact(&mut string_pool_data)
+            .map_err(ParseError::IoError)?;
 
         // Parse string offsets
-        let mut offsets =
-            Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
-        for _ in 0..string_pool_header.string_count {
-            offsets.push(read_u32(input)?);
-        }
+        let num_offsets = usize::try_from(string_pool_header.string_count).unwrap();
+        let offsets = parse_offsets(&string_pool_data, num_offsets);
 
-        const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
-
-        let s = string_pool_header.string_start - u32::try_from(STRINGPOOL_HEADER_SIZE).unwrap();
-        input.seek(SeekFrom::Start(chunk_data_start)).unwrap();
-        input.seek(SeekFrom::Current(s.into())).unwrap();
-
-        // Save current position in the file stream
-        let string_data_start = input.stream_position().unwrap();
+        let string_data_start =
+            usize::try_from(string_pool_header.string_start).unwrap() - STRINGPOOL_HEADER_SIZE;
+        let string_data = &string_pool_data[string_data_start..];
 
         let mut strings =
             Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
+
         for offset in offsets {
-            input.seek(SeekFrom::Current(offset.into())).unwrap();
-
             if flag_is_utf8 {
-                strings.push(Rc::new(parse_utf8_string(input)?));
+                strings.push(Rc::new(parse_utf8_string(
+                    &string_data,
+                    usize::try_from(offset).unwrap(),
+                )?));
             } else {
-                strings.push(Rc::new(parse_utf16_string(input)?));
+                strings.push(Rc::new(parse_utf16_string(
+                    &string_data,
+                    usize::try_from(offset).unwrap(),
+                )?));
             }
-
-            input.seek(SeekFrom::Start(string_data_start)).unwrap();
         }
-
-        let s =
-            string_pool_header.chunk_header.size - u32::try_from(STRINGPOOL_HEADER_SIZE).unwrap();
-        input.seek(SeekFrom::Start(chunk_data_start)).unwrap();
-        input.seek(SeekFrom::Current(s.into())).unwrap();
 
         Ok(Self {
             header: string_pool_header,
@@ -111,21 +108,35 @@ impl StringPool {
     }
 }
 
-fn parse_utf16_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError> {
-    let len = read_u16(input)?;
+fn parse_offsets(string_data: &[u8], count: usize) -> Vec<u32> {
+    let mut offsets = Vec::with_capacity(count);
+
+    for i in 0..count {
+        let index = i * 4;
+        let offset = LittleEndian::read_u32(&string_data[index..index + 4]);
+        offsets.push(offset);
+    }
+
+    offsets
+}
+
+fn parse_utf16_string(string_data: &[u8], offset: usize) -> Result<String, ParseError> {
+    let len = LittleEndian::read_u16(&string_data[offset..offset + 2]);
 
     // Handles the case where the string is > 32767 characters
     if is_high_bit_set_16(len) {
         unimplemented!()
     }
 
-    let mut s = Vec::with_capacity(len.into());
-    for _ in 0..len {
-        s.push(read_u16(input)?);
-    }
+    // This needs to change if we ever implement support for long strings
+    let string_start = offset + 2;
 
-    // Encoded string length does not include the trailing 0
-    let _ = read_u16(input)?;
+    let mut s = Vec::with_capacity(len.into());
+    for i in 0..len {
+        let index = string_start + usize::try_from(i * 2).unwrap();
+        let char = LittleEndian::read_u16(&string_data[index..index + 2]);
+        s.push(char);
+    }
 
     Ok(String::from_utf16(&s).unwrap())
 }
@@ -134,9 +145,8 @@ fn is_high_bit_set_16(input: u16) -> bool {
     input & (1 << 15) != 0
 }
 
-fn parse_utf8_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError> {
-    let _ = read_u8(input)?;
-    let len = read_u8(input)?;
+fn parse_utf8_string(string_data: &[u8], offset: usize) -> Result<String, ParseError> {
+    let len = string_data[offset + 1];
 
     // Handles the case where the length value has high bit set
     // Not quite clear if the UTF-8 encoding actually has this but
@@ -145,13 +155,15 @@ fn parse_utf8_string<F: Read + Seek>(input: &mut F) -> Result<String, ParseError
         unimplemented!()
     }
 
-    let mut s = Vec::with_capacity(len.into());
-    for _ in 0..len {
-        s.push(read_u8(input)?);
-    }
+    // This needs to change if we ever implement support for long strings
+    let string_start = offset + 2;
 
-    // Encoded string length does not include the trailing 0
-    let _ = read_u8(input)?;
+    let mut s = Vec::with_capacity(len.into());
+    for i in 0..len {
+        let index = string_start + usize::try_from(i).unwrap();
+        let char = string_data[index];
+        s.push(char);
+    }
 
     Ok(String::from_utf8(s).unwrap())
 }
