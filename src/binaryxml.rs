@@ -2,8 +2,78 @@ use std::convert::TryFrom;
 use std::io::{Read, Seek};
 
 use crate::resource_value::ResourceValue;
+use crate::stringpool::StringPool;
 use crate::{read_u16, read_u32, ParseError};
 use num_enum::TryFromPrimitive;
+
+pub(crate) struct BinaryXmlDocument {
+    pub(crate) elements: Vec<XmlElement>,
+    pub(crate) string_pool: StringPool,
+    pub(crate) resource_map: Vec<u32>,
+}
+
+impl BinaryXmlDocument {
+    pub(crate) fn read_from_file<F: Read + Seek>(input: &mut F) -> Result<Self, ParseError> {
+        let header = ChunkHeader::read_from_file(input)?;
+
+        if header.typ != ResourceType::Xml {
+            return Err(ParseError::InvalidFile);
+        }
+
+        let mut elements = Vec::new();
+        let mut string_pool = None;
+        let mut resource_map = None;
+
+        loop {
+            let header = ChunkHeader::read_from_file(input);
+            if let Err(ParseError::IoError(_)) = &header {
+                break;
+            }
+            let header = header?;
+
+            match header.typ {
+                ResourceType::StringPool => {
+                    string_pool = Some(StringPool::read_from_file(input, &header)?);
+                }
+                ResourceType::XmlResourceMap => {
+                    resource_map = Some(parse_resource_map(input, &header)?);
+                }
+                ResourceType::XmlStartNameSpace => {
+                    elements.push(XmlElement::XmlStartNameSpace(
+                        XmlStartNameSpace::read_from_file(input, &header)?,
+                    ));
+                }
+                ResourceType::XmlEndNameSpace => {
+                    elements.push(XmlElement::XmlEndNameSpace(
+                        XmlEndNameSpace::read_from_file(input, &header)?,
+                    ));
+                }
+                ResourceType::XmlStartElement => {
+                    elements.push(XmlElement::XmlStartElement(
+                        XmlStartElement::read_from_file(input, &header)?,
+                    ));
+                }
+                ResourceType::XmlEndElement => {
+                    elements.push(XmlElement::XmlEndElement(XmlEndElement::read_from_file(
+                        input, &header,
+                    )?));
+                }
+                ResourceType::XmlCdata => {
+                    elements.push(XmlElement::XmlCdata(XmlCdata::read_from_file(
+                        input, &header,
+                    )?));
+                }
+                _ => return Err(ParseError::InvalidFile),
+            }
+        }
+
+        Ok(Self {
+            elements,
+            string_pool: string_pool.ok_or(ParseError::MissingStringPoolChunk)?,
+            resource_map: resource_map.ok_or(ParseError::MissingResourceMapChunk)?,
+        })
+    }
+}
 
 #[repr(u16)]
 #[derive(Debug, PartialEq, Clone, TryFromPrimitive)]

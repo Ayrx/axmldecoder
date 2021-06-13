@@ -25,12 +25,7 @@ use byteorder::LittleEndian;
 use std::io::{Read, Seek};
 use thiserror::Error;
 
-use crate::binaryxml::{
-    parse_resource_map, ChunkHeader, ResourceType, XmlCdata, XmlElement, XmlEndElement,
-    XmlEndNameSpace, XmlStartElement, XmlStartNameSpace,
-};
-use crate::stringpool::StringPool;
-
+use crate::binaryxml::BinaryXmlDocument;
 pub use crate::xml::{Cdata, Element, Node, XmlDocument};
 
 #[derive(Error, Debug)]
@@ -77,63 +72,12 @@ pub enum ParseError {
 ///# Ok::<(), ParseError>(())
 ///```
 pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
-    let header = ChunkHeader::read_from_file(input)?;
-
-    if header.typ != ResourceType::Xml {
-        return Err(ParseError::InvalidFile);
-    }
-
-    let mut elements = Vec::new();
-    let mut string_pool = None;
-    let mut resource_map = None;
-
-    loop {
-        let header = ChunkHeader::read_from_file(input);
-        if let Err(ParseError::IoError(_)) = &header {
-            break;
-        }
-        let header = header?;
-
-        match header.typ {
-            ResourceType::StringPool => {
-                string_pool = Some(StringPool::read_from_file(input, &header)?);
-            }
-            ResourceType::XmlResourceMap => {
-                resource_map = Some(parse_resource_map(input, &header)?);
-            }
-            ResourceType::XmlStartNameSpace => {
-                elements.push(XmlElement::XmlStartNameSpace(
-                    XmlStartNameSpace::read_from_file(input, &header)?,
-                ));
-            }
-            ResourceType::XmlEndNameSpace => {
-                elements.push(XmlElement::XmlEndNameSpace(
-                    XmlEndNameSpace::read_from_file(input, &header)?,
-                ));
-            }
-            ResourceType::XmlStartElement => {
-                elements.push(XmlElement::XmlStartElement(
-                    XmlStartElement::read_from_file(input, &header)?,
-                ));
-            }
-            ResourceType::XmlEndElement => {
-                elements.push(XmlElement::XmlEndElement(XmlEndElement::read_from_file(
-                    input, &header,
-                )?));
-            }
-            ResourceType::XmlCdata => {
-                elements.push(XmlElement::XmlCdata(XmlCdata::read_from_file(
-                    input, &header,
-                )?));
-            }
-            _ => return Err(ParseError::InvalidFile),
-        }
-    }
+    let binaryxml = BinaryXmlDocument::read_from_file(input)?;
 
     XmlDocument::new(
-        elements,
-        string_pool.ok_or(ParseError::MissingStringPoolChunk)?,
-        resource_map.ok_or(ParseError::MissingResourceMapChunk)?,
+        binaryxml.elements,
+        binaryxml.string_pool,
+        binaryxml.resource_map,
     )
 }
 
