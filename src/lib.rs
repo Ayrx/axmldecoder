@@ -22,13 +22,13 @@ mod xml;
 
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
-use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use thiserror::Error;
 
 use crate::binaryxml::{
-    XmlCdata, XmlElement, XmlEndElement, XmlEndNameSpace, XmlStartElement, XmlStartNameSpace,
+    ChunkHeader, ResourceType, XmlCdata, XmlElement, XmlEndElement, XmlEndNameSpace,
+    XmlStartElement, XmlStartNameSpace,
 };
 use crate::stringpool::StringPool;
 
@@ -65,50 +65,6 @@ pub enum ParseError {
 
     #[error(transparent)]
     IoError(std::io::Error),
-}
-
-#[repr(u16)]
-#[derive(Debug, PartialEq, Clone, TryFromPrimitive)]
-enum ResourceType {
-    NullType = 0x000,
-    StringPool = 0x0001,
-    Table = 0x0002,
-    Xml = 0x0003,
-    XmlStartNameSpace = 0x0100,
-    XmlEndNameSpace = 0x101,
-    XmlStartElement = 0x0102,
-    XmlEndElement = 0x0103,
-    XmlCdata = 0x0104,
-    XmlLastChunk = 0x017f,
-    XmlResourceMap = 0x0180,
-    TablePackage = 0x0200,
-    TableType = 0x0201,
-    TableTypeSpec = 0x0202,
-    TableLibrary = 0x0203,
-}
-
-#[repr(C)]
-#[derive(Clone, Debug)]
-struct ChunkHeader {
-    typ: ResourceType,
-    header_size: u16,
-    size: u32,
-}
-
-impl ChunkHeader {
-    fn read_from_file<F: Read + Seek>(input: &mut F) -> Result<Self, ParseError> {
-        let typ = ResourceType::try_from(read_u16(input)?).map_err(|_| ParseError::InvalidFile)?;
-        let header_size = read_u16(input)?;
-        let size = read_u32(input)?;
-
-        let header = ChunkHeader {
-            typ,
-            header_size,
-            size,
-        };
-
-        Ok(header)
-    }
 }
 
 ///Parses an Android binary XML and returns a [XmlDocument] object.

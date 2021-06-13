@@ -4,7 +4,8 @@ use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use std::rc::Rc;
 
-use crate::{read_u32, ChunkHeader, ParseError};
+use crate::binaryxml::ChunkHeader;
+use crate::{read_u32, ParseError};
 
 #[derive(Debug)]
 pub(crate) struct StringPoolHeader {

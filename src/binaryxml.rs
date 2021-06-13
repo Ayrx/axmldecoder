@@ -1,7 +1,53 @@
+use std::convert::TryFrom;
 use std::io::{Read, Seek};
 
 use crate::resource_value::ResourceValue;
-use crate::{read_u16, read_u32, ChunkHeader, ParseError};
+use crate::{read_u16, read_u32, ParseError};
+use num_enum::TryFromPrimitive;
+
+#[repr(u16)]
+#[derive(Debug, PartialEq, Clone, TryFromPrimitive)]
+pub(crate) enum ResourceType {
+    NullType = 0x000,
+    StringPool = 0x0001,
+    Table = 0x0002,
+    Xml = 0x0003,
+    XmlStartNameSpace = 0x0100,
+    XmlEndNameSpace = 0x101,
+    XmlStartElement = 0x0102,
+    XmlEndElement = 0x0103,
+    XmlCdata = 0x0104,
+    XmlLastChunk = 0x017f,
+    XmlResourceMap = 0x0180,
+    TablePackage = 0x0200,
+    TableType = 0x0201,
+    TableTypeSpec = 0x0202,
+    TableLibrary = 0x0203,
+}
+
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub(crate) struct ChunkHeader {
+    pub(crate) typ: ResourceType,
+    pub(crate) header_size: u16,
+    pub(crate) size: u32,
+}
+
+impl ChunkHeader {
+    pub(crate) fn read_from_file<F: Read + Seek>(input: &mut F) -> Result<Self, ParseError> {
+        let typ = ResourceType::try_from(read_u16(input)?).map_err(|_| ParseError::InvalidFile)?;
+        let header_size = read_u16(input)?;
+        let size = read_u32(input)?;
+
+        let header = ChunkHeader {
+            typ,
+            header_size,
+            size,
+        };
+
+        Ok(header)
+    }
+}
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
