@@ -40,6 +40,12 @@ pub enum ParseError {
     InvalidFile,
 
     #[error(transparent)]
+    Utf8StringParseError(std::string::FromUtf8Error),
+
+    #[error(transparent)]
+    Utf16StringParseError(std::string::FromUtf16Error),
+
+    #[error(transparent)]
     IoError(std::io::Error),
 }
 

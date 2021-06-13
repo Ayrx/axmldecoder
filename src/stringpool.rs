@@ -137,7 +137,8 @@ fn parse_utf16_string(string_data: &[u8], offset: usize) -> Result<String, Parse
         s.push(char);
     }
 
-    Ok(String::from_utf16(&s).unwrap())
+    let s = String::from_utf16(&s).map_err(ParseError::Utf16StringParseError)?;
+    Ok(s)
 }
 
 fn is_high_bit_set_16(input: u16) -> bool {
@@ -164,7 +165,8 @@ fn parse_utf8_string(string_data: &[u8], offset: usize) -> Result<String, ParseE
         s.push(char);
     }
 
-    Ok(String::from_utf8(s).unwrap())
+    let s = String::from_utf8(s).map_err(ParseError::Utf8StringParseError)?;
+    Ok(s)
 }
 
 fn is_high_bit_set_8(input: u8) -> bool {
