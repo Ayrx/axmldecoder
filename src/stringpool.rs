@@ -79,18 +79,17 @@ impl StringPool {
         let mut strings =
             Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
 
+        let parse_fn = if flag_is_utf8 {
+            parse_utf8_string
+        } else {
+            parse_utf16_string
+        };
+
         for offset in offsets {
-            if flag_is_utf8 {
-                strings.push(Rc::new(parse_utf8_string(
-                    &string_data,
-                    usize::try_from(offset).unwrap(),
-                )?));
-            } else {
-                strings.push(Rc::new(parse_utf16_string(
-                    &string_data,
-                    usize::try_from(offset).unwrap(),
-                )?));
-            }
+            strings.push(Rc::new(parse_fn(
+                &string_data,
+                usize::try_from(offset).unwrap(),
+            )?));
         }
 
         Ok(Self {
