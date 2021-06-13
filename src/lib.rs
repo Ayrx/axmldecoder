@@ -22,13 +22,12 @@ mod xml;
 
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
-use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use thiserror::Error;
 
 use crate::binaryxml::{
-    ChunkHeader, ResourceType, XmlCdata, XmlElement, XmlEndElement, XmlEndNameSpace,
-    XmlStartElement, XmlStartNameSpace,
+    parse_resource_map, ChunkHeader, ResourceType, XmlCdata, XmlElement, XmlEndElement,
+    XmlEndNameSpace, XmlStartElement, XmlStartNameSpace,
 };
 use crate::stringpool::StringPool;
 
@@ -136,20 +135,6 @@ pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
         string_pool.ok_or(ParseError::MissingStringPoolChunk)?,
         resource_map.ok_or(ParseError::MissingResourceMapChunk)?,
     )
-}
-
-fn parse_resource_map<F: Read + Seek>(
-    input: &mut F,
-    header: &ChunkHeader,
-) -> Result<Vec<u32>, ParseError> {
-    let id_count = (header.size - u32::from(header.header_size)) / 4;
-
-    let mut ids = Vec::with_capacity(usize::try_from(id_count).unwrap());
-    for _ in 0..id_count {
-        ids.push(read_u32(input)?);
-    }
-
-    Ok(ids)
 }
 
 fn read_u8<F: Read + Seek>(input: &mut F) -> Result<u8, ParseError> {
