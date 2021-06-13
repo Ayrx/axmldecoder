@@ -39,7 +39,6 @@ impl StringPoolHeader {
             style_start,
         };
 
-        // println!("{:?}", header);
         Ok(header)
     }
 }

@@ -191,7 +191,6 @@ impl XmlStartNameSpace {
             uri,
         };
 
-        // println!("{:?}", node);
         Ok(node)
     }
 }
@@ -218,7 +217,6 @@ impl XmlEndNameSpace {
             uri,
         };
 
-        // println!("{:?}", node);
         Ok(node)
     }
 }
@@ -312,7 +310,6 @@ impl XmlStartElement {
             attributes,
         };
 
-        // println!("{:?}", node);
         Ok(node)
     }
 }
@@ -335,7 +332,6 @@ impl XmlEndElement {
 
         let node = Self { header, ns, name };
 
-        // println!("{:?}", node);
         Ok(node)
     }
 }
@@ -362,7 +358,6 @@ impl XmlCdata {
             typed_data,
         };
 
-        // println!("{:?}", node);
         Ok(node)
     }
 }
