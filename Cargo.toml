@@ -2,7 +2,7 @@
 name = "axmldecoder"
 description = "Decode Android's binary XML format"
 license = "MIT OR Apache-2.0"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Terry Chia <terrycwk1994@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/Ayrx/axmldecoder"
