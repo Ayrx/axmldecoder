@@ -1,5 +1,4 @@
 use indexmap::IndexMap;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
@@ -21,7 +20,7 @@ impl XmlDocument {
         string_pool: StringPool,
         resource_map: ResourceMap,
     ) -> Result<Self, ParseError> {
-        let mut namespaces = HashMap::new();
+        let mut namespaces = IndexMap::new();
 
         let mut element_tracker: Vec<Element> = Vec::new();
         for node in nodes {
@@ -97,7 +96,7 @@ impl XmlDocument {
     fn process_start_element(
         e: &XmlStartElement,
         string_pool: &StringPool,
-        namespaces: &HashMap<Rc<String>, Rc<String>>,
+        namespaces: &IndexMap<Rc<String>, Rc<String>>,
         resource_map: &[u32],
     ) -> Result<Element, ParseError> {
         let ns = string_pool.get(usize::try_from(e.attr_ext.ns).unwrap());
