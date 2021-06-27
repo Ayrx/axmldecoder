@@ -61,11 +61,7 @@ pub enum ParseError {
 ///```
 pub fn parse(input: &[u8]) -> Result<XmlDocument, ParseError> {
     let binaryxml = BinaryXmlDocument::try_from(input).map_err(ParseError::DekuError)?;
-    XmlDocument::new(
-        binaryxml.elements,
-        binaryxml.string_pool,
-        binaryxml.resource_map,
-    )
+    XmlDocument::new(binaryxml)
 }
 
 #[cfg(test)]

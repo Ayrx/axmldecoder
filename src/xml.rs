@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::binaryxml::{
-    ResourceMap, XmlCdata, XmlNode, XmlNodeType, XmlStartElement, XmlStartNameSpace,
+    BinaryXmlDocument, XmlCdata, XmlNodeType, XmlStartElement, XmlStartNameSpace,
 };
 use crate::stringpool::StringPool;
 use crate::ParseError;
@@ -15,15 +15,14 @@ pub struct XmlDocument {
 }
 
 impl XmlDocument {
-    pub(crate) fn new(
-        nodes: Vec<XmlNode>,
-        string_pool: StringPool,
-        resource_map: ResourceMap,
-    ) -> Result<Self, ParseError> {
+    pub(crate) fn new(binaryxml: BinaryXmlDocument) -> Result<Self, ParseError> {
+        let string_pool = binaryxml.string_pool;
+        let resource_map = binaryxml.resource_map;
+
         let mut namespaces = IndexMap::new();
 
         let mut element_tracker: Vec<Element> = Vec::new();
-        for node in nodes {
+        for node in binaryxml.elements {
             match node.element {
                 XmlNodeType::XmlStartNameSpace(e) => {
                     let (uri, prefix) = Self::process_start_namespace(&e, &string_pool)?;
