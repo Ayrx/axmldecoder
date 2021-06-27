@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
@@ -107,7 +108,7 @@ impl XmlDocument {
             .ok_or(ParseError::StringNotFound(e.attr_ext.name))?;
         let name = (*name).clone();
 
-        let mut attributes: HashMap<String, String> = HashMap::new();
+        let mut attributes: IndexMap<String, String> = IndexMap::new();
         for attr in &e.attributes {
             let ns = string_pool.get(usize::try_from(attr.ns).unwrap());
             let name = string_pool
@@ -155,14 +156,14 @@ pub enum Node {
 ///Struct representing an element within the parsed XML document.
 #[derive(Debug)]
 pub struct Element {
-    attributes: HashMap<String, String>,
+    attributes: IndexMap<String, String>,
     tag: String,
     children: Vec<Node>,
 }
 
 impl Element {
     ///Returns a map of attributes associated with the element.
-    pub fn get_attributes(&self) -> &HashMap<String, String> {
+    pub fn get_attributes(&self) -> &IndexMap<String, String> {
         &self.attributes
     }
 
