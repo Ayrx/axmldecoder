@@ -20,8 +20,7 @@ mod resource_value;
 mod stringpool;
 mod xml;
 
-use byteorder::ByteOrder;
-use byteorder::LittleEndian;
+use std::convert::TryFrom;
 use std::io::{Read, Seek};
 use thiserror::Error;
 
@@ -32,6 +31,9 @@ pub use crate::xml::{Cdata, Element, Node, XmlDocument};
 pub enum ParseError {
     #[error("invalid file")]
     InvalidFile,
+
+    #[error("deku error: {0}")]
+    DekuError(deku::DekuError),
 
     #[error("missing StringPool chunk")]
     MissingStringPoolChunk,
@@ -72,34 +74,15 @@ pub enum ParseError {
 ///# Ok::<(), ParseError>(())
 ///```
 pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
-    let binaryxml = BinaryXmlDocument::read_from_file(input)?;
+    let mut buf = Vec::new();
+    input.read_to_end(&mut buf).map_err(ParseError::IoError)?;
+    let binaryxml = BinaryXmlDocument::try_from(buf.as_ref()).map_err(ParseError::DekuError)?;
 
     XmlDocument::new(
         binaryxml.elements,
         binaryxml.string_pool,
         binaryxml.resource_map,
     )
-}
-
-fn read_u8<F: Read + Seek>(input: &mut F) -> Result<u8, ParseError> {
-    let mut buf = [0; 1];
-    input.read_exact(&mut buf).map_err(ParseError::IoError)?;
-
-    Ok(buf[0])
-}
-
-fn read_u16<F: Read + Seek>(input: &mut F) -> Result<u16, ParseError> {
-    let mut buf = [0; 2];
-    input.read_exact(&mut buf).map_err(ParseError::IoError)?;
-
-    Ok(LittleEndian::read_u16(&buf))
-}
-
-fn read_u32<F: Read + Seek>(input: &mut F) -> Result<u32, ParseError> {
-    let mut buf = [0; 4];
-    input.read_exact(&mut buf).map_err(ParseError::IoError)?;
-
-    Ok(LittleEndian::read_u32(&buf))
 }
 
 #[cfg(test)]

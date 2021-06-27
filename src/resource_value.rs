@@ -1,12 +1,11 @@
-use num_enum::TryFromPrimitive;
+use deku::prelude::*;
+
 use std::convert::TryFrom;
-use std::io::{Read, Seek};
 use std::rc::Rc;
 
 use crate::stringpool::StringPool;
-use crate::{read_u16, read_u32, read_u8, ParseError};
 
-#[derive(Debug)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub(crate) struct ResourceValue {
     pub(crate) size: u16,
     pub(crate) res: u8,
@@ -15,20 +14,6 @@ pub(crate) struct ResourceValue {
 }
 
 impl ResourceValue {
-    pub(crate) fn read_from_file<F: Read + Seek>(input: &mut F) -> Result<Self, ParseError> {
-        let size = read_u16(input)?;
-        let res = read_u8(input)?;
-        let data_type = ResourceValueType::try_from(read_u8(input)?).unwrap();
-        let data = read_u32(input)?;
-
-        Ok(Self {
-            size,
-            res,
-            data_type,
-            data,
-        })
-    }
-
     pub(crate) fn get_value(&self, string_pool: &StringPool) -> Rc<String> {
         match &self.data_type {
             ResourceValueType::String => string_pool
@@ -45,8 +30,8 @@ impl ResourceValue {
     }
 }
 
-#[repr(u8)]
-#[derive(Debug, PartialEq, TryFromPrimitive)]
+#[derive(Debug, PartialEq, DekuRead, DekuWrite)]
+#[deku(type = "u8")]
 pub(crate) enum ResourceValueType {
     Null = 0x00,
     Reference = 0x01,

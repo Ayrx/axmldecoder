@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::rc::Rc;
 
-use crate::binaryxml::{XmlCdata, XmlElement, XmlStartElement, XmlStartNameSpace};
+use crate::binaryxml::{
+    ResourceMap, XmlCdata, XmlNode, XmlNodeType, XmlStartElement, XmlStartNameSpace,
+};
 use crate::stringpool::StringPool;
 use crate::ParseError;
 
@@ -14,29 +16,29 @@ pub struct XmlDocument {
 
 impl XmlDocument {
     pub(crate) fn new(
-        elements: Vec<XmlElement>,
+        nodes: Vec<XmlNode>,
         string_pool: StringPool,
-        resource_map: Vec<u32>,
+        resource_map: ResourceMap,
     ) -> Result<Self, ParseError> {
         let mut namespaces = HashMap::new();
 
         let mut element_tracker: Vec<Element> = Vec::new();
-        for element in elements {
-            match element {
-                XmlElement::XmlStartNameSpace(e) => {
+        for node in nodes {
+            match node.element {
+                XmlNodeType::XmlStartNameSpace(e) => {
                     let (uri, prefix) = Self::process_start_namespace(&e, &string_pool)?;
                     namespaces.insert(uri.clone(), prefix.clone());
                 }
-                XmlElement::XmlEndNameSpace(_) => {}
-                XmlElement::XmlStartElement(e) => {
+                XmlNodeType::XmlEndNameSpace(_) => {}
+                XmlNodeType::XmlStartElement(e) => {
                     element_tracker.push(Self::process_start_element(
                         &e,
                         &string_pool,
                         &namespaces,
-                        &resource_map,
+                        &resource_map.resource_ids,
                     )?);
                 }
-                XmlElement::XmlEndElement(_) => {
+                XmlNodeType::XmlEndElement(_) => {
                     let e = element_tracker.pop().unwrap();
 
                     if element_tracker.is_empty() {
@@ -50,7 +52,7 @@ impl XmlDocument {
                         .unwrap()
                         .insert_children(Node::Element(e));
                 }
-                XmlElement::XmlCdata(e) => {
+                XmlNodeType::XmlCdata(e) => {
                     let cdata = Self::process_cdata(&e, &string_pool)?;
                     element_tracker
                         .last_mut()

@@ -1,13 +1,16 @@
+use deku::bitvec::{BitSlice, Msb0};
+use deku::prelude::*;
+
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use std::convert::TryFrom;
-use std::io::{Read, Seek};
+use std::io::Read;
 use std::rc::Rc;
 
 use crate::binaryxml::ChunkHeader;
-use crate::{read_u32, ParseError};
+use crate::ParseError;
 
-#[derive(Debug)]
+#[derive(Debug, DekuRead, DekuWrite)]
 pub(crate) struct StringPoolHeader {
     pub(crate) chunk_header: ChunkHeader,
     pub(crate) string_count: u32,
@@ -17,67 +20,38 @@ pub(crate) struct StringPoolHeader {
     pub(crate) style_start: u32,
 }
 
-impl StringPoolHeader {
-    fn read_from_file<F: Read + Seek>(
-        input: &mut F,
-        chunk_header: &ChunkHeader,
-    ) -> Result<Self, ParseError> {
-        let chunk_header = chunk_header.clone();
-        let string_count = read_u32(input)?;
-        let style_count = read_u32(input)?;
-        let flags = read_u32(input)?;
-
-        let string_start = read_u32(input)?;
-        let style_start = read_u32(input)?;
-
-        let header = Self {
-            chunk_header,
-            string_count,
-            style_count,
-            flags,
-            string_start,
-            style_start,
-        };
-
-        Ok(header)
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, DekuRead)]
 pub(crate) struct StringPool {
     pub(crate) header: StringPoolHeader,
+    #[deku(reader = "StringPool::read_strings(&*header, deku::rest)")]
     pub(crate) strings: Vec<Rc<String>>,
 }
 
+type DekuRest = BitSlice<Msb0, u8>;
 impl StringPool {
-    pub(crate) fn read_from_file<F: Read + Seek>(
-        input: &mut F,
-        chunk_header: &ChunkHeader,
-    ) -> Result<Self, ParseError> {
-        let string_pool_header = StringPoolHeader::read_from_file(input, chunk_header)?;
-        assert_eq!(string_pool_header.style_count, 0);
+    fn read_strings<'a>(
+        header: &StringPoolHeader,
+        mut rest: &'a DekuRest,
+    ) -> Result<(&'a DekuRest, Vec<Rc<String>>), DekuError> {
+        assert_eq!(header.style_count, 0);
 
-        let flag_is_utf8 = (string_pool_header.flags & (1 << 8)) != 0;
+        let flag_is_utf8 = (header.flags & (1 << 8)) != 0;
 
         const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
-        let s =
-            usize::try_from(string_pool_header.chunk_header.size).unwrap() - STRINGPOOL_HEADER_SIZE;
-        let mut string_pool_data = vec![0; s];
+        let s = usize::try_from(header.chunk_header.size).unwrap() - STRINGPOOL_HEADER_SIZE;
 
-        input
-            .read_exact(&mut string_pool_data)
-            .map_err(ParseError::IoError)?;
+        let mut string_pool_data = vec![0; s];
+        rest.read_exact(&mut string_pool_data).unwrap();
 
         // Parse string offsets
-        let num_offsets = usize::try_from(string_pool_header.string_count).unwrap();
+        let num_offsets = usize::try_from(header.string_count).unwrap();
         let offsets = parse_offsets(&string_pool_data, num_offsets);
 
         let string_data_start =
-            usize::try_from(string_pool_header.string_start).unwrap() - STRINGPOOL_HEADER_SIZE;
+            usize::try_from(header.string_start).unwrap() - STRINGPOOL_HEADER_SIZE;
         let string_data = &string_pool_data[string_data_start..];
 
-        let mut strings =
-            Vec::with_capacity(usize::try_from(string_pool_header.string_count).unwrap());
+        let mut strings = Vec::with_capacity(usize::try_from(header.string_count).unwrap());
 
         let parse_fn = if flag_is_utf8 {
             parse_utf8_string
@@ -86,16 +60,13 @@ impl StringPool {
         };
 
         for offset in offsets {
-            strings.push(Rc::new(parse_fn(
-                &string_data,
-                usize::try_from(offset).unwrap(),
-            )?));
+            strings.push(Rc::new(
+                parse_fn(&string_data, usize::try_from(offset).unwrap())
+                    .map_err(|e| DekuError::Parse(e.to_string()))?,
+            ));
         }
 
-        Ok(Self {
-            header: string_pool_header,
-            strings,
-        })
+        Ok((rest, strings))
     }
 
     pub(crate) fn get(&self, i: usize) -> Option<Rc<String>> {
