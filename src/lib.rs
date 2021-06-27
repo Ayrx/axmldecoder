@@ -21,7 +21,6 @@ mod stringpool;
 mod xml;
 
 use std::convert::TryFrom;
-use std::io::{Read, Seek};
 use thiserror::Error;
 
 use crate::binaryxml::BinaryXmlDocument;
@@ -68,16 +67,12 @@ pub enum ParseError {
 ///```rust
 ///use axmldecoder::parse;
 ///# use axmldecoder::ParseError;
-///# let manifest_file = "examples/AndroidManifest.xml";
-///let mut f = std::fs::File::open(manifest_file).unwrap();
-///parse(&mut f)?;
+///let data= include_bytes!("../examples/AndroidManifest.xml");
+///parse(data)?;
 ///# Ok::<(), ParseError>(())
 ///```
-pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
-    let mut buf = Vec::new();
-    input.read_to_end(&mut buf).map_err(ParseError::IoError)?;
-    let binaryxml = BinaryXmlDocument::try_from(buf.as_ref()).map_err(ParseError::DekuError)?;
-
+pub fn parse(input: &[u8]) -> Result<XmlDocument, ParseError> {
+    let binaryxml = BinaryXmlDocument::try_from(input).map_err(ParseError::DekuError)?;
     XmlDocument::new(
         binaryxml.elements,
         binaryxml.string_pool,
@@ -89,6 +84,7 @@ pub fn parse<F: Read + Seek>(input: &mut F) -> Result<XmlDocument, ParseError> {
 mod tests {
     use super::*;
     use std::fs::File;
+    use std::io::Read;
     use std::path::PathBuf;
 
     #[test]
@@ -99,7 +95,9 @@ mod tests {
         for entry in std::fs::read_dir(examples).unwrap() {
             let entry = entry.unwrap();
             let mut f = File::open(entry.path()).unwrap();
-            parse(&mut f).expect(&format!("{} failed to parse", entry.path().display()));
+            let mut buf = Vec::new();
+            f.read_to_end(&mut buf).unwrap();
+            parse(&buf).expect(&format!("{} failed to parse", entry.path().display()));
         }
     }
 }
