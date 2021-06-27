@@ -16,7 +16,6 @@
 //!if any issues are encountered.
 
 mod binaryxml;
-mod resource_value;
 mod stringpool;
 mod xml;
 
