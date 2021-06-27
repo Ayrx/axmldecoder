@@ -28,17 +28,8 @@ pub use crate::xml::{Cdata, Element, Node, XmlDocument};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
-    #[error("invalid file")]
-    InvalidFile,
-
-    #[error("deku error: {0}")]
+    #[error("parse error: {0}")]
     DekuError(deku::DekuError),
-
-    #[error("missing StringPool chunk")]
-    MissingStringPoolChunk,
-
-    #[error("missing ResourceMap chunk")]
-    MissingResourceMapChunk,
 
     #[error("StringPool missing index: {0}")]
     StringNotFound(u32),
@@ -57,9 +48,6 @@ pub enum ParseError {
 
     #[error(transparent)]
     Utf16StringParseError(std::string::FromUtf16Error),
-
-    #[error(transparent)]
-    IoError(std::io::Error),
 }
 
 ///Parses an Android binary XML and returns a [XmlDocument] object.
