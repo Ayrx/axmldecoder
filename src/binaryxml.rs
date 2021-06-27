@@ -15,7 +15,6 @@ pub(crate) struct BinaryXmlDocument {
     pub(crate) elements: Vec<XmlNode>,
 }
 
-#[repr(u16)]
 #[derive(Debug, PartialEq, Clone, Copy, DekuRead, DekuWrite)]
 #[deku(type = "u16")]
 pub(crate) enum ResourceType {
@@ -36,7 +35,6 @@ pub(crate) enum ResourceType {
     TableLibrary = 0x0203,
 }
 
-#[repr(C)]
 #[derive(Clone, Debug, DekuRead, DekuWrite)]
 pub(crate) struct ChunkHeader {
     pub(crate) typ: ResourceType,
