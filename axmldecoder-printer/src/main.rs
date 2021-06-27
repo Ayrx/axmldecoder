@@ -1,14 +1,12 @@
 use anyhow::Result;
-
 use axmldecoder::{Cdata, Element, Node};
-use std::fs::File;
 
 fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let fname = args.get(1).unwrap();
 
-    let mut f = File::open(fname)?;
-    let xml = axmldecoder::parse(&mut f)?;
+    let f = std::fs::read(fname)?;
+    let xml = axmldecoder::parse(&f)?;
 
     let root = xml.get_root().as_ref().unwrap();
     let mut s = String::new();
