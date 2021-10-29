@@ -61,7 +61,7 @@ impl StringPool {
 
         for offset in offsets {
             strings.push(Rc::new(
-                parse_fn(&string_data, usize::try_from(offset).unwrap())
+                parse_fn(string_data, usize::try_from(offset).unwrap())
                     .map_err(|e| DekuError::Parse(e.to_string()))?,
             ));
         }

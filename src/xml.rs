@@ -112,7 +112,7 @@ impl XmlDocument {
             let name = string_pool
                 .get(usize::try_from(attr.name).unwrap())
                 .ok_or(ParseError::StringNotFound(attr.name))?;
-            let value = attr.typed_value.get_value(&string_pool);
+            let value = attr.typed_value.get_value(string_pool);
 
             let mut final_name = String::new();
             if !name.is_empty() {
