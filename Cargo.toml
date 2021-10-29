@@ -12,6 +12,6 @@ exclude = ["examples/**", "axmldecoder-printer/**"]
 
 [dependencies]
 byteorder = "1.4.3"
-deku = "0.12.2"
-indexmap = "1.6.2"
-thiserror = "1.0.24"
+deku = "0.12.4"
+indexmap = "1.7.0"
+thiserror = "1.0.30"
