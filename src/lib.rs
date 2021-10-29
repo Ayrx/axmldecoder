@@ -19,7 +19,6 @@ mod binaryxml;
 mod stringpool;
 mod xml;
 
-use std::convert::TryFrom;
 use thiserror::Error;
 
 use crate::binaryxml::BinaryXmlDocument;

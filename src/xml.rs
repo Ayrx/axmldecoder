@@ -1,5 +1,4 @@
 use indexmap::IndexMap;
-use std::convert::TryFrom;
 use std::rc::Rc;
 
 use crate::binaryxml::{

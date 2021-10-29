@@ -1,6 +1,5 @@
 use crate::stringpool::StringPool;
 use deku::prelude::*;
-use std::convert::TryFrom;
 use std::rc::Rc;
 
 #[derive(Debug, DekuRead)]
@@ -8,9 +7,9 @@ pub(crate) struct BinaryXmlDocument {
     pub(crate) header: ChunkHeader,
     pub(crate) string_pool: StringPool,
     pub(crate) resource_map: ResourceMap,
-    #[deku(bytes_read = "header.size - 
-            u32::try_from(header.header_size).unwrap() - 
-            string_pool.header.chunk_header.size - 
+    #[deku(bytes_read = "header.size -
+            u32::try_from(header.header_size).unwrap() -
+            string_pool.header.chunk_header.size -
             resource_map.header.size")]
     pub(crate) elements: Vec<XmlNode>,
 }

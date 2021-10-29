@@ -3,7 +3,6 @@ use deku::prelude::*;
 
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
-use std::convert::TryFrom;
 use std::io::Read;
 use std::rc::Rc;
 
