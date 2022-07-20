@@ -67,11 +67,6 @@ fn format_start_element(e: &Element) -> String {
     s.push('<');
     s.push_str(e.get_tag());
 
-    if e.get_tag() == "manifest" {
-        s.push(' ');
-        s.push_str("xmlns:android=\"http://schemas.android.com/apk/res/android\"");
-    }
-
     for (key, val) in e.get_attributes().iter() {
         s.push(' ');
         s.push_str(key);

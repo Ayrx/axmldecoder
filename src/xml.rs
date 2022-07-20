@@ -97,15 +97,21 @@ impl XmlDocument {
         namespaces: &IndexMap<Rc<String>, Rc<String>>,
         resource_map: &[u32],
     ) -> Result<Element, ParseError> {
-        let ns = string_pool.get(usize::try_from(e.attr_ext.ns).unwrap());
-        assert_eq!(ns, None);
-
         let name = string_pool
             .get(usize::try_from(e.attr_ext.name).unwrap())
             .ok_or(ParseError::StringNotFound(e.attr_ext.name))?;
         let name = (*name).clone();
 
         let mut attributes: IndexMap<String, String> = IndexMap::new();
+
+        // Specially handle the <manifest> element by adding the namespace
+        // attributes to it.
+        if name == "manifest" {
+            for (url, name) in namespaces.iter() {
+                attributes.insert(format!("xmlns:{}", name), url.to_string());
+            }
+        }
+
         for attr in &e.attributes {
             let ns = string_pool.get(usize::try_from(attr.ns).unwrap());
             let name = string_pool
