@@ -20,6 +20,16 @@ impl XmlDocument {
 
         let mut namespaces = IndexMap::new();
 
+        // There are some files without the XmlStartNameSpace element.
+        // We should assume that the android namespace is always present even
+        // if not explicitly defined in the document.
+        //
+        // examples/AndroidManifestNoNamespace.xml
+        namespaces.insert(
+            Rc::new("http://schemas.android.com/apk/res/android".to_string()),
+            Rc::new("android".to_string()),
+        );
+
         let mut element_tracker: Vec<Element> = Vec::new();
         for node in binaryxml.elements {
             match node.element {
