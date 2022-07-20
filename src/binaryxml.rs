@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 #[derive(Debug, DekuRead)]
 pub(crate) struct BinaryXmlDocument {
+    #[allow(dead_code)] // `header` is used by `deku`
     pub(crate) header: ChunkHeader,
     pub(crate) string_pool: StringPool,
     pub(crate) resource_map: ResourceMap,
