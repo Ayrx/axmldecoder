@@ -32,9 +32,6 @@ pub enum ParseError {
     #[error("StringPool missing index: {0}")]
     StringNotFound(u32),
 
-    #[error("Namespace missing: {0}")]
-    NamespaceNotFound(String),
-
     #[error("ResourceMap missing index: {0}")]
     ResourceIdNotFound(u32),
 

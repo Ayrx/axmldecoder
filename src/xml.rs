@@ -132,11 +132,15 @@ impl XmlDocument {
             let mut final_name = String::new();
             if !name.is_empty() {
                 if let Some(n) = ns {
-                    let ns_prefix = namespaces
-                        .get(&n)
-                        .ok_or_else(|| ParseError::NamespaceNotFound(n.to_string()))?;
-                    final_name.push_str(ns_prefix);
-                    final_name.push(':');
+                    // There are samples where the namespace value is the
+                    // raw string instead of a URI found in a namespace chunk.
+                    // For now, skip appending the namespace for those cases.
+                    //
+                    // examples/AndroidManifestUnknownNamespace
+                    if let Some(n) = namespaces.get(&n) {
+                        final_name.push_str(n);
+                        final_name.push(':');
+                    };
                 }
                 final_name.push_str(&name);
             } else {
