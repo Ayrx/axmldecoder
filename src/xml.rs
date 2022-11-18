@@ -65,7 +65,7 @@ impl XmlDocument {
                     element_tracker
                         .last_mut()
                         .unwrap()
-                        .insert_children(Node::Cdata(cdata))
+                        .insert_children(Node::Cdata(cdata));
                 }
             };
         }
@@ -74,6 +74,7 @@ impl XmlDocument {
     }
 
     ///Returns the root [Element] of the XML document.
+    #[must_use]
     pub fn get_root(&self) -> &Option<Node> {
         &self.root
     }
@@ -130,7 +131,14 @@ impl XmlDocument {
             let value = attr.typed_value.get_value(string_pool);
 
             let mut final_name = String::new();
-            if !name.is_empty() {
+            if name.is_empty() {
+                let resource_id = resource_map
+                    .get(usize::try_from(attr.name).unwrap())
+                    .ok_or(ParseError::ResourceIdNotFound(attr.name))?;
+                let resource_str = get_resource_string(*resource_id)
+                    .ok_or(ParseError::UnknownResourceString(*resource_id))?;
+                final_name.push_str(&resource_str);
+            } else {
                 if let Some(n) = ns {
                     // There are samples where the namespace value is the
                     // raw string instead of a URI found in a namespace chunk.
@@ -143,13 +151,6 @@ impl XmlDocument {
                     };
                 }
                 final_name.push_str(&name);
-            } else {
-                let resource_id = resource_map
-                    .get(usize::try_from(attr.name).unwrap())
-                    .ok_or(ParseError::ResourceIdNotFound(attr.name))?;
-                let resource_str = get_resource_string(*resource_id)
-                    .ok_or(ParseError::UnknownResourceString(*resource_id))?;
-                final_name.push_str(&resource_str);
             }
 
             attributes.insert(final_name, value.to_string());
@@ -180,16 +181,19 @@ pub struct Element {
 
 impl Element {
     ///Returns a map of attributes associated with the element.
+    #[must_use]
     pub fn get_attributes(&self) -> &IndexMap<String, String> {
         &self.attributes
     }
 
     ///Returns the element tag.
+    #[must_use]
     pub fn get_tag(&self) -> &str {
         &self.tag
     }
 
     ///Returns a list of child nodes.
+    #[must_use]
     pub fn get_children(&self) -> &Vec<Node> {
         &self.children
     }
@@ -206,6 +210,7 @@ pub struct Cdata {
 }
 
 impl Cdata {
+    #[must_use]
     pub fn get_data(&self) -> &str {
         &self.data
     }
@@ -1546,11 +1551,7 @@ fn get_resource_string(resource_id: u32) -> Option<String> {
         "colorSecondary",
     ];
 
-    let i = resource_id - 0x1010000;
+    let i = resource_id - 0x0101_0000;
 
-    Some(
-        RESOURCE_STRINGS
-            .get(usize::try_from(i).unwrap())?
-            .to_string(),
-    )
+    Some((*RESOURCE_STRINGS.get(usize::try_from(i).unwrap())?).to_string())
 }

@@ -22,7 +22,7 @@ pub(crate) struct StringPoolHeader {
 #[derive(Debug, DekuRead)]
 pub(crate) struct StringPool {
     pub(crate) header: StringPoolHeader,
-    #[deku(reader = "StringPool::read_strings(&*header, deku::rest)")]
+    #[deku(reader = "StringPool::read_strings(header, deku::rest)")]
     pub(crate) strings: Vec<Rc<String>>,
 }
 
@@ -32,11 +32,12 @@ impl StringPool {
         header: &StringPoolHeader,
         mut rest: &'a DekuRest,
     ) -> Result<(&'a DekuRest, Vec<Rc<String>>), DekuError> {
+        const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
+
         assert_eq!(header.style_count, 0);
 
         let flag_is_utf8 = (header.flags & (1 << 8)) != 0;
 
-        const STRINGPOOL_HEADER_SIZE: usize = std::mem::size_of::<StringPoolHeader>();
         let s = usize::try_from(header.chunk_header.size).unwrap() - STRINGPOOL_HEADER_SIZE;
 
         let mut string_pool_data = vec![0; s];
