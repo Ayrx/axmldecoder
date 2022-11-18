@@ -26,7 +26,7 @@ pub(crate) struct StringPool {
     pub(crate) strings: Vec<Rc<String>>,
 }
 
-type DekuRest = BitSlice<Msb0, u8>;
+type DekuRest = BitSlice<u8, Msb0>;
 impl StringPool {
     fn read_strings<'a>(
         header: &StringPoolHeader,
