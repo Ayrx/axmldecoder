@@ -45,8 +45,11 @@ pub enum ParseError {
     Utf16StringParseError(std::string::FromUtf16Error),
 }
 
-///Parses an Android binary XML and returns a [XmlDocument] object.
+///Parses an Android binary XML and returns a [`XmlDocument`] object.
 ///
+/// # Errors
+///
+/// Will return `ParseError` if `input` cannot be parsed
 ///```rust
 ///use axmldecoder::parse;
 ///# use axmldecoder::ParseError;
@@ -76,7 +79,7 @@ mod tests {
             let mut f = File::open(entry.path()).unwrap();
             let mut buf = Vec::new();
             f.read_to_end(&mut buf).unwrap();
-            parse(&buf).expect(&format!("{} failed to parse", entry.path().display()));
+            parse(&buf).unwrap_or_else(|_| panic!("{} failed to parse", entry.path().display()));
         }
     }
 }
