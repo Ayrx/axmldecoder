@@ -1,20 +1,37 @@
+use std::{fs, env};
 use anyhow::Result;
 use axmldecoder::{Cdata, Element, Node};
 
 fn main() -> Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    let fname = args.get(1).unwrap();
+    let args: Vec<String> = env::args().collect();
 
-    let f = std::fs::read(fname)?;
-    let xml = axmldecoder::parse(&f)?;
+    if args.len() <= 1 {
+        for path in fs::read_dir("../examples").unwrap() {
+            let f = std::fs::read(path?.path())?;
+            let xml = axmldecoder::parse(&f)?;
+    
+            let root = xml.get_root().as_ref().unwrap();
+            let mut s = String::new();
+            s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+            format_xml(&root, 0_usize, &mut s);
+    
+            let s = s.trim().to_string();
+            println!("{}", s);
+        }
+    } else {
+        let fname = args.get(1).unwrap();
 
-    let root = xml.get_root().as_ref().unwrap();
-    let mut s = String::new();
-    s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-    format_xml(&root, 0_usize, &mut s);
+        let f = std::fs::read(fname)?;
+        let xml = axmldecoder::parse(&f)?;
 
-    let s = s.trim().to_string();
-    println!("{}", s);
+        let root = xml.get_root().as_ref().unwrap();
+        let mut s = String::new();
+        s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
+        format_xml(&root, 0_usize, &mut s);
+
+        let s = s.trim().to_string();
+        println!("{}", s);
+    }
 
     Ok(())
 }
