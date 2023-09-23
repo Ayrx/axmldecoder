@@ -67,6 +67,10 @@ impl XmlDocument {
                         .unwrap()
                         .insert_children(Node::Cdata(cdata));
                 }
+                _ => {
+                    println!("Unknown node type: {:?}", node.element);
+                    continue;
+                }
             };
         }
 
@@ -124,10 +128,17 @@ impl XmlDocument {
         }
 
         for attr in &e.attributes {
-            let ns = string_pool.get(usize::try_from(attr.ns).unwrap());
-            let name = string_pool
-                .get(usize::try_from(attr.name).unwrap())
-                .ok_or(ParseError::StringNotFound(attr.name))?;
+            let ns = match usize::try_from(attr.ns) {
+                Ok(val) => string_pool.get(val),
+                Err(_) => continue,
+            };
+            let name = match usize::try_from(attr.name) {
+                Ok(val) => match string_pool.get(val) {
+                    Some(n) => n,
+                    None => continue,
+                },
+                Err(_) => continue,
+            };
             let value = attr.typed_value.get_value(string_pool);
 
             let mut final_name = String::new();
