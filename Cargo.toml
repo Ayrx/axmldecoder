@@ -12,6 +12,9 @@ exclude = ["examples/**", "axmldecoder-printer/**"]
 
 [dependencies]
 byteorder = "1.4.3"
-deku = "~0.16"
-indexmap = "1.9.2"
+# TODO: move to crates.io when the feature is available
+# default attribute for enums not yet available at version realeased on crates.io
+# https://github.com/sharksforarms/deku/pull/335
+deku = { git = "https://github.com/sharksforarms/deku" }
+indexmap = "2.0"
 thiserror = "1.0.37"

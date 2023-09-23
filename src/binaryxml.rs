@@ -19,9 +19,12 @@ pub(crate) struct BinaryXmlDocument {
 #[deku(type = "u16")]
 pub(crate) enum ResourceType {
     NullType = 0x000,
+
     StringPool = 0x0001,
     Table = 0x0002,
     Xml = 0x0003,
+
+    // Chunk types in XmlNodeType
     XmlStartNameSpace = 0x0100,
     XmlEndNameSpace = 0x101,
     XmlStartElement = 0x0102,
@@ -29,10 +32,14 @@ pub(crate) enum ResourceType {
     XmlCdata = 0x0104,
     XmlLastChunk = 0x017f,
     XmlResourceMap = 0x0180,
+
     TablePackage = 0x0200,
     TableType = 0x0201,
     TableTypeSpec = 0x0202,
     TableLibrary = 0x0203,
+
+    #[deku(id = "0xffff", default)]
+    Unknown = 0xffff,
 }
 
 #[derive(Clone, Debug, DekuRead, DekuWrite)]
@@ -70,6 +77,9 @@ pub(crate) enum XmlNodeType {
     XmlEndElement(XmlEndElement),
     #[deku(id = "ResourceType::XmlCdata")]
     XmlCdata(XmlCdata),
+
+    #[deku(id = "ResourceType::NullType", default)]
+    Unknown,
 }
 
 #[derive(Debug, DekuRead, DekuWrite)]
@@ -145,6 +155,9 @@ pub(crate) enum ResourceValueType {
     ColorRgb8 = 0x1d,
     ColorArgb4 = 0x1e,
     ColorRgb4 = 0x1f,
+
+    #[deku(id = "0xff", default)]
+    Unknown = 0xffff,
 }
 
 #[derive(Debug, DekuRead, DekuWrite)]

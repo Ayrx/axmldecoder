@@ -13,7 +13,7 @@ fn main() -> Result<()> {
             let root = xml.get_root().as_ref().unwrap();
             let mut s = String::new();
             s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-            format_xml(&root, 0_usize, &mut s);
+            format_xml(root, 0_usize, &mut s);
     
             let s = s.trim().to_string();
             println!("{}", s);
@@ -27,7 +27,7 @@ fn main() -> Result<()> {
         let root = xml.get_root().as_ref().unwrap();
         let mut s = String::new();
         s.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
-        format_xml(&root, 0_usize, &mut s);
+        format_xml(root, 0_usize, &mut s);
 
         let s = s.trim().to_string();
         println!("{}", s);
@@ -42,19 +42,19 @@ fn format_xml(e: &Node, level: usize, output: &mut String) {
             output.push_str(&format!(
                 "{:indent$}{}\n",
                 "",
-                &format_start_element(&e),
+                &format_start_element(e),
                 indent = level * 2
             ));
 
             for child in e.get_children() {
-                format_xml(&child, level + 1, output)
+                format_xml(child, level + 1, output)
             }
 
             if !e.get_children().is_empty() {
                 output.push_str(&format!(
                     "{:indent$}{}\n",
                     "",
-                    &format_end_element(&e),
+                    &format_end_element(e),
                     indent = level * 2
                 ));
             }
@@ -63,7 +63,7 @@ fn format_xml(e: &Node, level: usize, output: &mut String) {
             output.push_str(&format!(
                 "{:indent$}{}\n",
                 "",
-                &format_cdata(&e, level),
+                &format_cdata(e, level),
                 indent = level * 2
             ));
         }
@@ -74,7 +74,7 @@ fn format_cdata(e: &Cdata, level: usize) -> String {
     let indent = format!("{:indent$}", "", indent = level * 2);
     let mut s = String::new();
     s.push_str("<![CDATA[");
-    s.push_str(&e.get_data().replace("\n", &format!("\n{}", &indent)));
+    s.push_str(&e.get_data().replace('\n', &format!("\n{}", &indent)));
     s.push_str("]]>");
     s
 }
