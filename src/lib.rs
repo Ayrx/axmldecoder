@@ -70,16 +70,24 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn test_parse() {
+    fn test_parse() -> std::io::Result<()> {
         let mut examples = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         examples.push("examples");
 
-        for entry in std::fs::read_dir(examples).unwrap() {
-            let entry = entry.unwrap();
-            let mut f = File::open(entry.path()).unwrap();
+        for entry in std::fs::read_dir(&examples)? {
+            let entry = entry?;
+            println!("Processing file: {}", entry.path().display());
+            let mut f = File::open(entry.path())?;
             let mut buf = Vec::new();
-            f.read_to_end(&mut buf).unwrap();
-            parse(&buf).unwrap_or_else(|_| panic!("{} failed to parse", entry.path().display()));
+            f.read_to_end(&mut buf)?;
+            let result = parse(&buf);
+            assert!(
+                result.is_ok(),
+                "Failed to parse file: {}",
+                entry.path().display()
+            );
         }
+
+        Ok(())
     }
 }
